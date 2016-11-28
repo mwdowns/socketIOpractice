@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+  </head>
+  <body>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script src="frontend.js"></script>
+
+    <div id="nickWrap">
+      <p>Enter username</p>
+      <p id="nickError"></p>
+      <form id="setNick">
+        <input size="35" id="nickname" autocomplete="off"><button>Submit</button>
+      </form>
+    </div>
+
+    <div id="contentWrap">
+      <div id="chatWrap">
+        <div id="chat">
+          <ul id="messages"></ul>
+        </div>
+        <form id="sendMessage">
+          <input size="35" id="m" autocomplete="off" /><button>Send</button>
+        </form>
+      </div>
+      <div id="userlist"></div>
+    </div>
+  </body>
+</html>
