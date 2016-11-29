@@ -6,9 +6,9 @@ body {
   font: 13px Helvetica, Arial;
 }
 
-#contentWrap {
+/*#contentWrap {
   display: none;
-}
+}*/
 
 #chatWrap {
   float: left;
@@ -58,6 +58,14 @@ body {
 
 #messages li:nth-child(odd) {
   background: #eee;
+}
+
+#messages li:nth-child(odd) b {
+  color: red;
+}
+
+#messages li:nth-child(even) b {
+  color: green;
 }
 
 #userlist {
