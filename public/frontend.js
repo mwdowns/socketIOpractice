@@ -57,11 +57,11 @@ function emitMessage() {
   $message.val('');
 }
 
-function roomWelcomeMessage() {
-  socket.on('user room update', function(roomName) {
-    $chat.append("<li>Welcome to <b>" + roomName + "</b>'s room");
-  });
-}
+// function roomWelcomeMessage() {
+//   socket.on('user room update', function(data) {
+//     $chat.append("<li>Welcome to <b>" + data + "</b>'s room");
+//   });
+// }
 
 if (user.listener) {
   console.log('this user is a listener');
@@ -73,10 +73,13 @@ else {
   console.log('this user is a speaker');
   socket.emit('create', user.username);
   connectUser();
-  socket.on('user room update', function(roomName) {
+  socket.on('user room update', function(data) {
     console.log('hi');
-    if (roomName === user.username) {
-      $chat.append("<li>Welcome to <b>" + roomName + "</b>'s room");
+    if (data === user.username) {
+      $chat.append("<li>Welcome to <b>" + data + "</b>'s room");
+    }
+    else {
+      $chat.append("<li><b>" + data + "</b> has just joined your room.");
     }
   });
   updateSpeakerRoomList();
@@ -85,6 +88,12 @@ else {
 $messageForm.submit(function(e){
   e.preventDefault();
   emitMessage();
+});
+
+socket.on('move message', function(data) {
+  if (user.username === data.listener) {
+    $chat.append("<li>You have just joined <b>" + data.userRoom + "</b>'s room.");
+  }
 });
 
 socket.on('recieved chat message', function(data){

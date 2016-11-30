@@ -12,9 +12,6 @@ io.on('connection', function(socket) {
   socket.on('user', function(data) {
     if (data.listener) {
       console.log('this user is a listener');
-      console.log('this is the listeners array and should be empty', listeners.map(function(socket){
-        return socket.nickname;
-      }));
       if (data.username in listeners) {
         console.log('name taken');
       }
@@ -33,7 +30,9 @@ io.on('connection', function(socket) {
       });
     }
     else {
+      var privateRoom = [];
       console.log('this user is a speaker');
+      privateRoom.push(data.username);
       socket.nickname = data.username;
       socket.room = data.username;
       speakerRoom.push(socket);
@@ -43,12 +42,20 @@ io.on('connection', function(socket) {
       }));
       socket.join(socket.room);
       io.emit('user room update', socket.room);
-      updateSpeakerRoom();
+      io.emit('sent users', privateRoom);
       if (listeners.length > 0) {
         console.log('the listeners list is populated!');
+        console.log('the first listener is', listeners[0].nickname);
+        privateRoom.push(listeners[0].nickname);
+        io.emit('move message', {userRoom: socket.room, listener: listeners[0].nickname});
+        listeners[0].leave('listeners');
+        listeners[0].room = socket.room;
+        console.log('this is the room i want to go to', socket.room);
+        listeners[0].join(socket.room);
+        io.emit('user room update', listeners[0].nickname);
+        listeners.splice(0, 1);
       }
     }
-
   });
   console.log('a user connected');
 
@@ -58,11 +65,11 @@ io.on('connection', function(socket) {
     }));
   }
 
-  function updateSpeakerRoom() {
-    io.emit('sent users', speakerRoom.map(function(socket) {
-      return socket.nickname;
-    }));
-  }
+  // function updateSpeakerRoom() {
+  //   io.emit('sent users', speakerRoom.map(function(socket) {
+  //     return socket.nickname;
+  //   }));
+  // }
 
   socket.on('sent chat message', function(msg) {
     console.log('sent chat message:' + msg);
