@@ -1,3 +1,8 @@
+//*********************************************
+//THIS IS THE SOCKET.IO STUFF
+//*********************************************
+
+//this function here is for testing purposes only. once we get angular supplying the info, we can delete it and the weird values in the object in var user below.
 function getParameterByName(name, url) {
     if (!url) {
       url = window.location.href;
@@ -15,11 +20,9 @@ var socket = io();
 var $messageForm = $('#sendMessage');
 var $message = $('#m');
 var $chat = $('#messages');
-var $nickForm = $('#setNick');
-var $nickError = $('#nickError');
-var $nick = $('#nickname');
-var nickname = '';
-var user = {username: getParameterByName('username'), listener: getParameterByName('listener') === 'true'};
+var user = {username: getParameterByName('username'), listener: getParameterByName('listener') === 'true', paired: getParameterByName('paired') === 'true'};
+
+//these are extracted functions used in the logic
 
 function connectUser() {
   socket.on('connect', function() {
@@ -27,7 +30,6 @@ function connectUser() {
     console.log('this is the user', user);
   });
 }
-
 
 function updateListenerList() {
   socket.on('sent listeners', function(users) {
@@ -37,6 +39,7 @@ function updateListenerList() {
       chatusers += users[i] + '<br>';
     }
     $('#userlist').html(chatusers);
+    $('#title').html("This is the Listeners' pool");
   });
 }
 
@@ -48,6 +51,27 @@ function updateSpeakerRoomList() {
       chatusers += users[i] + '<br>';
     }
     $('#userlist').html(chatusers);
+    $('#title').html("This is " + users[0] + "'s room");
+  });
+}
+
+function moveAnnouncement() {
+  socket.on('move message', function(data) {
+    console.log('your name is ' + user.username + " and the room belongs to " + data.listener);
+    if (user.username === data.listener) {
+      $chat.append("<li>You have left the Listeners' room and just joined <b>" + data.userRoom + "</b>'s room.");
+    }
+  });
+}
+
+function roomUpdateAnnouncement() {
+  socket.on('user room update', function(data) {
+    if (data === user.username) {
+      $chat.append("<li>Welcome to <b>" + data + "</b>'s room");
+    }
+    else {
+      $chat.append("<li><b>" + data + "</b> has just joined your room.");
+    }
   });
 }
 
@@ -57,43 +81,51 @@ function emitMessage() {
   $message.val('');
 }
 
-// function roomWelcomeMessage() {
-//   socket.on('user room update', function(data) {
-//     $chat.append("<li>Welcome to <b>" + data + "</b>'s room");
-//   });
-// }
+function leftRoomMessage() {
+  socket.on('left room', function(data) {
+    if (user.username != data) {
+      $chat.append("<li><b>" + data + "</b> has just left your room.");
+    }
+  });
+}
+
+//this is the main logic for socket.io
 
 if (user.listener) {
   console.log('this user is a listener');
-  socket.emit('create', 'listeners');
+  // socket.emit('create', 'listeners');
   connectUser();
-  updateListenerList();
+  // updateListenerList();
+  socket.on('listeners update', function(data) {
+    console.log(user.username, data);
+    if (user.username != data) {
+      $chat.append("<li><b>" + data + "</b> has just joined the listeners room.");
+    }
+  });
+  moveAnnouncement();
+  if (user.paired) {
+    updateSpeakerRoomList();
+  }
+  else {
+    leftRoomMessage();
+    updateListenerList();
+  }
+  // leftRoomMessage();
+  // updateListenerList();
+
 }
 else {
   console.log('this user is a speaker');
-  socket.emit('create', user.username);
+  // socket.emit('create', user.username);
   connectUser();
-  socket.on('user room update', function(data) {
-    console.log('hi');
-    if (data === user.username) {
-      $chat.append("<li>Welcome to <b>" + data + "</b>'s room");
-    }
-    else {
-      $chat.append("<li><b>" + data + "</b> has just joined your room.");
-    }
-  });
+  roomUpdateAnnouncement();
+  leftRoomMessage();
   updateSpeakerRoomList();
 }
 
 $messageForm.submit(function(e){
   e.preventDefault();
   emitMessage();
-});
-
-socket.on('move message', function(data) {
-  if (user.username === data.listener) {
-    $chat.append("<li>You have just joined <b>" + data.userRoom + "</b>'s room.");
-  }
 });
 
 socket.on('recieved chat message', function(data){
