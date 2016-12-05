@@ -1,0 +1,18 @@
+<div>
+  <p ng-show="imalistener">This is the LISTENERS' room</p>
+  <p ng-show="!imalistener">This is {{username}}'s room</p>
+</div>
+<div id="contentWrap">
+  <div id="chatWrap">
+    <div id="chat">
+      <ul id="messages">
+        <li ng-repeat="item in chatLog"><b>{{item.username}}</b>: {{item.message}}</li>
+      </ul>
+    </div>
+    <form id="sendMessage" ng-submit="emitMessage()">
+      <input size="35" id="m" autocomplete="off" ng-model="newMessage"><button>Send</button>
+    </form>
+  </div>
+  <div id="listenerlist" ng-show="imalistener" ng-repeat="user in listeners">{{user}}<br></div>
+  <div id="speakerlist" ng-show="!imalistener" ng-repeat="user in speakers">{{user}}<br></div>
+</div>

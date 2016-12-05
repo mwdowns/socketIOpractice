@@ -17,7 +17,9 @@ io.on('connection', function(socket) {
   // This part listens for which type of user is connecting and
   socket.on('user', function(data) {
     // then goes to this if statement to sort them. The if takes out any listeners that connect
-    if (data.listener) {
+    console.log("who is this?", data.username);
+    console.log("is this a listener?", data.listener);
+    if (data.listener === true) {
       // (this probably doesn't need to be here since it's a relic from the original socket.io tutorial i followed...it checks to make sure the name is not taken)
       if (data.username in listeners) {
         console.log('name taken');
@@ -30,6 +32,7 @@ io.on('connection', function(socket) {
         socket.room = 'listeners';
         // This pushes the socket object to the listeners array
         listeners.push(socket);
+        chatDebugger();
         // This moves the user into the "listeners" room
         socket.join(socket.room);
         // This sends the username to the frontend so that it can announce that this user has joined the room
@@ -39,7 +42,7 @@ io.on('connection', function(socket) {
       }
     }
     // This part of the if statment catches speakers as they connect.
-    else {
+    if (data.listener === false) {
       // This creates a privateRoom empty arry. This array should only ever have one or two entries and is specific to a speaker's room
       var privateRoom = [];
       // This pushes the user's username to the privateRooom array
@@ -50,13 +53,14 @@ io.on('connection', function(socket) {
       socket.room = data.username;
       // This pushes the user's socket object to the speakerRoom array (we maby be able to do away with this part and just push the socket to the privateRoom array)
       speakerRoom.push(socket);
-      console.log('hey ho, lets go. im speaker, this is the room name', socket.room);
-      console.log('this is the list of available listeners', listeners.map(function(socket){
-        return socket.username;
-      }));
-      console.log('this is the list of speakers', speakerRoom.map(function(socket){
-        return socket.username;
-      }));
+      chatDebugger();
+      // console.log('hey ho, lets go. im speaker, this is the room name', socket.room);
+      // console.log('this is the list of available listeners', listeners.map(function(socket){
+      //   return socket.username;
+      // }));
+      // console.log('this is the list of speakers', speakerRoom.map(function(socket){
+      //   return socket.username;
+      // }));
       // This joins the user to the private room
       socket.join(socket.room);
       // This sends the room name to the frontend to update the name of the room
@@ -83,8 +87,12 @@ io.on('connection', function(socket) {
         io.sockets.in(socket.room).emit('sent users', privateRoom);
         // listenersWithSpeakers.push(listeners[0]);
         speakerRoom.push(listeners[0]);
+        console.log('moving listener to speakerRoom');
+        chatDebugger();
         // This removes the listener from the listeners array
+        console.log('removing listener from listeners');
         listeners.splice(0, 1);
+        chatDebugger();
       }
       updateListeners();
     }
@@ -107,18 +115,13 @@ io.on('connection', function(socket) {
   // This listens to the frontend and when it hears 'sent chat message' from any socket it takes the data from that emit and sends it back to all sockets connected to that room. So if someone from the 'listeners' room types something it goes to all sockets in that room.
   socket.on('sent chat message', function(msg) {
     console.log('sent chat message:' + msg);
-    io.sockets.in(socket.room).emit('recieved chat message', {message: msg, user: socket.username});
+    io.sockets.in(socket.room).emit('recieved chat message', {message: msg, username: socket.username});
   });
 
   // This listens to the frontend and when it hears 'disconnect' from any socket it does these things. But now that I look at it again, it might not do anything, because it will not have any of this information because the socket no longer exists.
   socket.on('disconnect', function() {
     //It announces to the frontend that a user has left the room and the user's username
-    console.log('speakerRoom length', speakerRoom.length);
-    if (socket.room != socket.username) {
-      console.log('this is bullshit');
-      // console.log('this is the listeners array length', listeners.length);
-      // console.log(speakerRoom.length);
-    }
+    // console.log('speakerRoom length', speakerRoom.length);
     io.sockets.in(socket.room).emit('left room', socket.username);
     console.log('user disconnected');
     //
@@ -126,23 +129,45 @@ io.on('connection', function(socket) {
     var index = listeners.indexOf(socket);
     var index2 = speakerRoom.indexOf(socket);
     if (index != -1) {
-      console.log(socket.username);
+      console.log('this is the the state of the rooms before a disconnect');
+      chatDebugger();
       listeners.splice(index, 1);
+      console.log('this is the state of the rooms after the splices');
+      chatDebugger();
     }
     if (index2 != -1) {
-      console.log(socket.username);
+      console.log('this is the the state of the rooms before a disconnect');
+      chatDebugger();
+      console.log(index2);
+      console.log(speakerRoom[index2].username);
+      console.log(socket.room);
       speakerRoom.splice(index2, 1);
       var listenerposition = speakerRoom.map(function(x) {
           return x.room;
         }).indexOf(socket.room);
       var listenerObject = speakerRoom.splice(listenerposition, 1);
-      listenerObject[0].room = 'listeners';
-      listeners.push(listenerObject[0]);
+      if (speakerRoom[0].room != speakerRoom[0].username) {
+        listenerObject[0].room = 'listeners';
+        listeners.push(listenerObject[0]);
+        console.log('this is the state of the rooms after the splices');
+        chatDebugger();
+        updateListeners();
+      }
     }
-    updateListeners();
   });
 
 });
+
+function chatDebugger() {
+  console.log('*************');
+  console.log('this is my debugger');
+  console.log('these are the users in the listeners room', listeners.map(function(socket){
+    return socket.username;
+  }));
+  console.log('this is the list of users in the speakers room', speakerRoom.map(function(socket) { return socket.username;
+  }));
+  console.log('************');
+}
 
 
 http.listen(3000, function() {
