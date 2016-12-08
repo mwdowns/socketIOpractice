@@ -66,6 +66,15 @@ app.controller('ChatController', function($scope, socket, $stateParams, $state, 
     });
   }
 
+  function updateSpeakerRoomList() {
+    socket.on('sent users', function(users) {
+      console.log('these are the speakers in the room', users);
+      $scope.imalistener = false;
+      $scope.speakers = users;
+      console.log($scope.imalistener);
+    });
+  }
+
   function roomUpdateAnnouncement() {
     socket.on('user room update', function(data) {
       $scope.message = {message: '', username: 'Announcement'};
@@ -81,14 +90,26 @@ app.controller('ChatController', function($scope, socket, $stateParams, $state, 
     });
   }
 
-  function listenerRoomMessage() {
-    socket.on('listeners update', function(data) {
-      console.log($scope.user.username, data);
-      if (user.username != data) {
-        $chat.append("<li><b>" + data + "</b> has just joined the listeners room.");
+  function moveAnnouncement() {
+    socket.on('move message', function(data) {
+      $scope.message = {message: '', username: 'Announcement'};
+      $scope.imalistener = false;
+      if ($scope.user.username === data.listener) {
+        console.log('your name is ' + $scope.user.username + " and the room belongs to " + data.userRoom);
+        $scope.message.message = "You have left the Listeners' room and just joined <b>" + data.userRoom + "</b>'s room.";
+        $scope.chatLog.push($scope.message);
       }
     });
   }
+
+  socket.on('speaker left room', function(room) {
+    $scope.message = {message: '', username: 'Announcement'};
+    if ($scope.user.username != room) {
+      console.log("the speaker left the room. would you like to go back to the listeners' room?");
+      $scope.message.message = room + " has just left the room. Would you like go back to the listeners's room?";
+      $scope.chatLog.push($scope.message);
+    }
+  });
 
   if ($scope.user.listener) {
     console.log('this user is a listener');
@@ -100,9 +121,10 @@ app.controller('ChatController', function($scope, socket, $stateParams, $state, 
     //     $chat.append("<li><b>" + data + "</b> has just joined the listeners room.");
     //   }
     // });
-    // moveAnnouncement();
+    moveAnnouncement();
     if ($scope.user.paired) {
       console.log($scope.user.paired);
+      // $scope.paired = true;
       updateSpeakerRoomList();
     }
     else {
